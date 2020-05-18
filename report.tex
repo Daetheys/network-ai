@@ -1,0 +1,97 @@
+\documentclass[11pt]{article}
+%Gummi|065|=)
+\usepackage[]{algorithm2e}
+\title{\textbf{Detecting lateral movements on huge active networks}}
+\author{Nicolas YAX}
+\date{}
+\begin{document}
+
+\maketitle
+
+
+\section{What are lateral movements ?}
+
+Nowadays networks are more protected from North-South attacks (coming from the outside of the network) rather than West-East attacks (coming from the inside the network). This affects on many aspects methods hackers use to get information from networks in order to make profit (black mail, selling stolen databases, ...). Actually it's very effective to enter a network and to spy it from the inside getting higher and higher privileges to access more and more files and in the end reach databases and important files.This vulnerability of actual netorks is particularly alarming the more remote work develops (IT companies are particularly vulnerable and the lockdown is a real playground for hackers especially because it's sudden and companies haven't had enough time to prepare for it). \\
+The scheme of lateral movement attacks is the following : 
+\begin{enumerate}
+\item Find an entry point : you first need to access the network. To do so several methods can be used. The most common one is phishing but it's also possible to use different exploits when zero-day vulnerabilities are disclosed (usually people need a month to patch them). Once you have access to an account you can start moving inside the network.
+\item Explore the network : from an account you have access to various systems of the network (computers, printers, microscopes, ...). You can now start mapping the network and see its topology, who is administrator, where are interesting data and known vulnerabilities of services. This is the spying part where you can read files the account has access to. The hacked account may also have administrator rights on several services which means you can access even more files.\\
+\item Movement phase : When you have done everything you wanted to do with the hacked account services it's time to move on and to hack other accounts in order to get access to other services and files. To do so you can use several tricks (mimikatz,steal tokens, ...). It's usually far easier if your account is administrator of at least one service because you can use exploits (such as mimikatz to dump passwords from the memory of accounts logged on the service). That's why it's crucial to hack administrator accounts to higher your priviledges and hack the other accounts more easily. 
+
+However network administrators usually don't get caught by phishing mails which means it's more realistic to find an easy entry point (like an intern or to focus on people vulnerable such as people who aren't aware of risks and are in touch with many other people about various projects like the secretary). Once you've access to a new account you can repeat phase 2.
+\end{enumerate}
+This method is particulaty effective because you stay hidden in the network activity and it may become very hard to spot your activity hidden close to all other communications. When account A accesses data D how do you know whether it's the real person behind account A or a hacker trying to remotely spy the network ? 
+
+However these attacks aren't perfect : you need to have access to accounts to get access to files and services. If the password is changed when you are in phase 2 you lose access to the account and it strongly slows your exploration. This means if all passwords are changed hackers lose all their control on the network (they still know the topology of the network and files they have already read) but they need to find an other entry point (which might take a while). This way if passwords are regularly changed lateral movements attacks are highly slowed. 
+
+Moreover to get access to crucial data an attacker needs to be really quick and to infect as many account as possible before passwords are changed and such a behaviour is easy to spot. Using such a technology is a real barriere to lateral movements attacks because either the hacker is spotted very fast or he won't be able to access many files (and there is a low probability for him to find something relevant to make money).
+\paragraph{Asumption 1:}
+Passwords are changed every \textit{password\_time}.
+\paragraph{}
+Obviously it's very unconvenient to have passwords changing too often and I will talk about an innovant way to do so in the end of this report. (we can achieve \textit{password\_time} = 5 min for high security servers very easily which completely kills lateral movement attacks in those networks).\\
+\paragraph{}
+Nonetheless changing passwords may be pointless if keyloggers are installed on services. A keylogger will send every password to the hacker who can then continue his work. Nevertheless a keylogger needs to send passwords from the target service to an other server controlled by the hacker and this is too strange to happen in a profesional network. It's very easy to see where packets are sent from your computer and if it's currently talking with an unknown computer using a russian VPN for example it's obvious that a hacker controls this server and this IP should be blocked by a firewall automatically. 
+
+The only vulnerable servers are webservers because they constantly talk with unknown computers/servers/VPN. However those servers are targeted by attacks several times a day and thus are under very high security which means it should be almost impossible to send password through them without being spotted. Usually they are formatted to only output specific packets such as specific webpages and sending a password would be too obvious and spotted very quickly. Thus using a keylogger to counter this strategy would be almost impossible in a real and serious environment.
+
+\section{How to spot lateral movements ?}
+\indent Lateral movements are caraterised by the spread of access to services through accounts hacking. First let's see the model we will use to spot those movements :\\
+\indent Let $S=(V_s,E_s)$ be the service graph with $V_s$ the set of nodes representing services (they may be various different services but we won't make any differrence between a printer and a computer) and $E_s$ be the set of conections between services (such as a printer connected to a set of computers).\\
+\indent Let $A=(V_a,E_{as})$ be the account graph with $V_a$ the set of nodes representing accounts and $E_{as}$ the set of access to services. Actually to make it very simple we won't make a difference between an administrator and a simple user of a service. $a\in V_a$ has access or hasn't access to $s\in V_s$.\\
+\indent Those 2 graphs define the topology of the network. Let's now define the vulnerability graph which will be used to detect lateral movements. Let $V=(V_a,E_v)$ be the vulnerability graph where $V_a$ is the set of accounts and $E_v$ is the set of edges where when a hacker has access to $a\in V_a$ and $(a,a')\in E_v$ it may hack $a'\in V_a$. 
+
+If two users have access to the same service and one of them's account is hacked then the second's account may be compromised (see mimikatz to dump passwords from memory or token stealing methods). It' also possible from a service to send a malware to an other connected service to get access to an account logged on. These two ways to infect the other accounts will be used to define the vulnerability graph. 
+
+Thus $(a,a')\in E_v$ iff ($\exists s\in V_s. (a,s)\in E_{as}$ and $(a',s)\in E_{as}$) or\\ ($\exists s\in V_s. \exists s'\in V_s. (a,s)\in E_{as}$ and $(a',s')\in E_{as}$ and $(s,s')\in E_s$). Which formally express what we have just talked about.
+
+[EXAMPLES]
+
+Passwords are changed every \textit{password\_time} which stops the propagation of attacks in the network. That means everything will happen in the interval \textit{password\_time} and then will be reset. We can now define sequences of events \ref{node}. To introduce fingerprints we'll need an other set : let $F_1 = \{ \{s\in V_s \| (a,s) \in E_{as}\} \| a\in V_a\}$. This set is the set of authorisation terroritories of users. It defines sets of services accounts have exactly access too. When a hacker has access to an account he will expore all these services and it might be visible because all services of a spectific user's territory would be explored very quickly.
+
+Basically when service $s\in V_s$ is accessed by account $a\in V_a$ for the first time of the interval an event with fingerprint $\{e\in F_1 \| s \in e\}\subset F_1$ is created. This fingerprint says that $s\in V_s$ within various territories of many users has been accessed. If a territory is fully accessed it will be noticed and users who have access to this territory might be infected. With this first analysis it's hard to know who has been infected. In fact the hacker may be smart enough to not access too many services with a single account but to expore a few of them on each account (in pratice many services are accessible to everyone - like a printer) so as to explore them all. This way we can see the portion of territory that has been accessed independently of the account used for it which is more relevant to understand the propagation of lateral movements inside the network.\\
+\indent During this interval we will record various events defining a event stream on which we can apply the node anomaly algorithm. Events aren't truely independent because one may need to remotely access his computer so as to remotely access the printer. For example on a 2 services network with a single account, P($access\_computer\|access\_printer$) is 1 but P($access\_computer$) isn't 1. However we'll consider that globaly on huge networks with many services and accounts it's independent. The number of services is bounded by N=$\|V_s\|$ so the lenght of the event stream is deterministic (by adding empty events at the end of the stream to get exactly N events).\\
+\indent To get a better understanding about what is happening in the network we will run an other instance of the node anomaly algorithm with $F_2 = V_a \cup V_s$ where when $a\in V_a$ accesses $s\in V_s$ for the first time an event with fingerprint $\{a,s\} \subset F_2$ is created. This is particularly usefull to spot hackers who are stressed by the timer due to password reset and who would want to access too many services with a single account. It is relevant to find the entry point because it will have an abnormal number of accesses even if next infected account will access less services (because they may already have been visited). This way by combining both analysis we can get a pretty good understanding about what is happening in the network. We will still consider events are independent in huge networks.\\
+\indent Given a treshold $\alpha$ for the confidence level (must be adapted to the network activity) the node anomaly algorithm will return $e\in F_{\{1,2\}}$ which is too or not enough active in events. We only want to know when it's too active which means when $M_t^{j} > \mu^*+\sqrt{n_tlog(2/\delta)/2}$ (see \ref{node} equation (5)). \\
+\indent When such an anomaly is detected it's probably an ongoing attack. 
+
+We could stop there but reserting passwords very often has drawbacks : we'll lack of statistical data. It's very probable that in a network activities of users are continuous : user 1 might be working on an update of a service and will access it a lot during few jours and them move to an other system. The short time between resets might be an issue and create a lot of false positives. That's the first reason why a second layer is relevant.
+
+The second one is that diagnosis can be highly improved using the vulnerability graph. We may follow alerts raised on accounts liked to warned territories and accounts with a suspicious activity. The algorithm runs on subsequences of the whole sequence which means we can put a time marker on each alert (we can choose for example the first time maker of the sub-sequence). Basically the output of those node anomaly algorithms are 2 event streams $S_1$ and $S_2$ on the vulnerability graph. 
+
+To be more precise $S_1$ is a stream on $F_1$ but there is a link between $F_1$ and $V_a$ which is for each territory we can assign a set of users that have exactly access to those services. $S_1$ is thus the stream of those associated accounts. $S_2$ should be a stream on $F_2=V_a\cup V_s$ but we are only interested in events on $V_a$ so we will project $F_2$ on $V_a$ to create $S_2$. 
+
+Let $S$ be the union of both and $time$ be the sorted union of time markers of $S$. This stream will also have weights associated to events. Basically when $e$ is in $S$ it means every node in the fingerprint has a $M_i^{(j)} > \mu^*+\sqrt{n_tlog(2/\delta)/2}$ and the weight associated with the node will be $w = M_i^{(j)} - (\mu^*+\sqrt{n_tlog(2/\delta)/2})$ ($>0$ because we only take events linked to an overactivity of a node). Weighted events streams are thus a sequence of events like this : $(t,fingerprint,weight)$.
+
+Each event alerts about several nodes that may be corrupted. We now need to add a temporal coherence on those data to find a possible progressive lateral movement chain. We'll create a temporal vulnerability graph $Temp_V=(V_{temp_V},E_{temp_V})$ where 
+\begin{enumerate}
+\item $V_{temp_V} = \{(a,t) \|a \in V_a, t\in time\}$
+\item $E_{temp_V}$ = $\{((a,t),(a,t'),w) \| $t' is right after t in $time$. if $(t,\{a\},w')\in S_2, w=w',$else $w=0\}\\
+\cup\\
+\{((a,t),(a',t),w) \| \exists (a,t',w')\in S_1.t'<t,(a,a')\in E_V,(a',t,w'')\in S_1,w=max(w^{(3)}\|(a,t',w^{(3)})\in S_1.t'<t,(a,a')\in E_V)+w''$$\}$. 
+\end{enumerate}
+
+This graph is oriented. We then add a node $(START,0)$ connected to all $(a\in V_a,t_0)$ with $t_0$ the first time marker of $time$ and weight 0 and a final node $(END,\infty)$ connected to all $(a\in V_a,t_{-1})$ with $t_{-1}$ the last time maker of $time$ and weight 0. 
+
+We finally compute the longest path between $(START,0)$ and $(END,\infty)$ and compare its length to a treshold value $\beta$ (to be determined depending on the network). If the treshold is reached there is a security breach and we can get the possible path of the attacker with every account compromised as well as timesteps when they were compromised and we can get information about compromised services by analysing $S_1$ to see territories attacked.
+
+See annexe 1 for the global algorithm.
+
+The only part to train is the node anomaly algorithm which can easily be trained on data from a normal usage of the network.
+
+\section{How to change passwords very often}
+The real power of this method is based on a efficient way to change passwords.
+
+\section{Annexe}
+\begin{algorithm}[H]
+ \KwData{Basic event sub-stream : $stream$ - on $V_a\cup V_s$ from t=0 to t=$\Delta$t$<password\_time$ about $a\in V_a$ accessing $s\in V_s$ at a specific timestep $\tau$, Graphs A S and V}
+ \KwResult{Boolean : whether an attack is actually happening}
+ 
+ $S_1$ = NodeAnomaly(ComputeF1stream($stream$))\;
+ $S_2$ = NodeAnomaly(ComputeF2stream($stream$))\;
+ $Temp_V$ = ComputeTempV($S_1\cup S_2$)\;
+ $longest\_path$ = LongestPath($Temp_V$,$START$,$END$)\;
+ \Return $longest\_path.length>\beta$\;
+ \caption{Main algorithm}
+\end{algorithm}
+
+\end{document}
